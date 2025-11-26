@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>توقعات الأعضاء | أرسنال × بايرن ميونيخ</title>
+  <style>
+    body {
+      font-family: "Tahoma", sans-serif;
+      background: linear-gradient(120deg, #0f172a, #0b1020 70%);
+      color: #e5e7eb;
+      margin: 0;
+      padding: 24px;
+      text-align: center;
+    }
+    .champions-title { font-size: 28px; font-weight: bold; color: #e11d48; margin-bottom: 20px; }
+    .teams { display: flex; justify-content: center; align-items: center; gap: 40px; font-size: 22px; font-weight: bold; margin-bottom: 20px; }
+    .vs { color: #f59e0b; font-size: 26px; }
+    .meta { display: flex; gap: 12px; flex-wrap: wrap; margin: 8px 0 20px; font-size: 14px; color: #9ca3af; justify-content:center; }
+    .countdown { background: #121a2d; border: 1px solid #1f2937; padding: 14px 16px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; margin: 20px auto; max-width: 500px; }
+    .countdown strong { color: #e5e7eb; }
+    .card { background: #111827; border: 1px solid #1f2937; border-radius: 14px; padding: 16px; margin: 16px auto; max-width: 700px; text-align:right; }
+    form { display: flex; flex-direction: column; gap: 12px; }
+    label { font-size: 13px; color: #9ca3af; margin-bottom: 4px; display:block; text-align:right; }
+    input, select, button { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #374151; background: #0b1224; color: #e5e7eb; }
+    button { border: none; cursor: pointer; font-weight: 700; }
+    .list { display: grid; gap: 14px; margin-top: 12px; }
+    .item { background: linear-gradient(135deg, #1e293b, #0f172a); border: 1px solid #1f2937; padding: 14px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.4); display: flex; flex-direction: column; align-items: flex-start; gap: 6px; }
+    .badge { padding: 6px 10px; border-radius: 999px; font-size: 12px; border: 1px solid #374151; }
+    .score { color: #10b981; }
+    .prob { color: #f59e0b; font-weight: bold; }
+    .actions { display:flex; justify-content:center; margin-top:10px; }
+    #export { background: #10b981; }
+    footer span {
+      display:inline-block;
+      margin-top:20px;
+      font-family:'Courier New', monospace;
+      font-size:18px;
+      color:#e11d48;
+      font-weight:bold;
+      letter-spacing:2px;
+      text-shadow: 1px 1px 4px rgba(0,0,0,0.6);
+    }
+  </style>
+</head>
+<body>
+  <div class="champions-title">🏆 دوري أبطال أوروبا</div>
+  <div class="teams">
+    <div>أرسنال</div>
+    <div class="vs">VS</div>
+    <div>بايرن ميونيخ</div>
+  </div>
+
+  <div class="meta">
+    <div>📍 ملعب الإمارات، لندن</div>
+    <div>⏰ اليوم — 11:00 مساءً بتوقيت مكة/الرياض</div>
+  </div>
+
+  <div class="countdown">
+    <div>
+      <strong>العدّ التنازلي لبداية المباراة</strong>
+      <div id="cd-text" style="margin-top:6px;color:#9ca3af;">يتم التحضير...</div>
+    </div>
+    <div class="badge">📅 الأربعاء</div>
+  </div>
+
+  <div class="card">
+    <h3>أضف توقعك</h3>
+    <form id="predict-form">
+      <div>
+        <label for="name">اسمك</label>
+        <input id="name" type="text" placeholder="مثال: أحمد" required />
+      </div>
+      <div>
+        <label>النتيجة المتوقعة</label>
+        <div style="display:flex; gap:8px; align-items:center;">
+          <input id="arsenal-score" type="number" min="0" placeholder="أهداف أرسنال" required />
+          <span>-</span>
+          <input id="bayern-score" type="number" min="0" placeholder="أهداف بايرن" required />
+        </div>
+      </div>
+      <div>
+        <label for="confidence">نسبة الثقة (%)</label>
+        <input id="confidence" type="number" min="1" max="100" value="60" required />
+      </div>
+      <div>
+        <label for="winner">الفائز</label>
+        <select id="winner" required>
+          <option value="">اختر</option>
+          <option value="أرسنال">أرسنال</option>
+          <option value="بايرن ميونيخ">بايرن ميونيخ</option>
+          <option value="تعادل">تعادل</option>
+        </select>
+      </div>
+      <button type="submit">إضافة التوقع</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>توقعات الأعضاء</h3>
+    <div id="list" class="list"></div>
+    <div class="actions">
+      <button id="export">📥 تصدير CSV</button>
+    </div>
+  </div>
+
+  <!-- التوقيع -->
+  <footer>
+    <span>✦ تصميم وتعديل : NMO ✦</span>
+  </footer>
+
+  <script>
+    // العد التنازلي
+    (function initCountdown() {
+      const cd = document.getElementById("cd-text");
+      const now = new Date();
+      const kickoff = new Date(now);
+      kickoff.setHours(23, 0, 0, 0);
+      if (kickoff.getTime() <= now.getTime()) {
+        kickoff.setDate(kickoff.getDate() + 1);
+      }
+      function updateCountdown() {
+        const t = kickoff.getTime() - Date.now();
+        if (t <= 0) {
+          cd.textContent = "انطلقت المباراة!";
+          clearInterval(timer);
+          return;
+        }
+        const d = Math.floor(t / (1000*60*60*24));
+        const h = Math.floor((t % (1000*60*60*24)) / (1000*60*60));
+        const m = Math.floor((t % (1000*60*60)) / (1000*60));
+        const s = Math.floor((t % (1000*60)) / 1000);
+        cd.textContent = d > 0 
+          ? `متبقٍ: ${d} يوم ${h} ساعة ${m} دقيقة ${s} ثانية`
+          : `متبقٍ: ${h} ساعة ${m} دقيقة ${s} ثانية`;
+      }
+      updateCountdown();
+      const timer = setInterval(updateCountdown, 1000);
+    })();
+
+    // إدارة التوقعات عبر GitHub API
+    const form = document.getElementById("predict-form");
+    const list = document.getElementById("list");
+    const exportBtn = document.getElementById("export");
+
+    const repo = "username/champions-league-predictions"; // ضع اسم المستخدم والمستودع
+    const path = "predictions.json";
+    const branch = "main";
+    const token = "YOUR_GITHUB_TOKEN"; // ضع التوكن هنا
+
+    async function fetchPredictions() {
+      const res = await fetch(`https://api.github.com/repos/${repo}/contents/${path}?ref=${branch}`, {
+        headers: { Authorization: `token ${token}` }
+      });
+      const data = await res.json();
+      return { predictions: JSON.parse(atob(data.content)), sha: data.sha };
+    }
+
+    async function savePredictions(predictions, sha) {
+      const content =
+      async function savePredictions(predictions, sha) {
+      const content = btoa(JSON.stringify(predictions, null, 2));
+      await fetch(`https://api.github.com/repos/${repo}/contents/${path}`, {
+      method: "PUT",
+      headers: {
+      Authorization: `token ${token}`,
+      "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+      message: "Update predictions",
+      content: content,
+      branch: branch,
+      sha: sha
+      })
+      });
+      }
+      
+      function render(predictions) {
+      list.innerHTML = "";
+      if (predictions.length === 0) {
+      list.innerHTML = "<div style='color:#9ca3af'>لا توجد توقعات بعد. كن أول من يتوقع!</div>";
+      return;
+      }
+      predictions.forEach(p => {
+      const el = document.createElement("div");
+      el.className = "item";
+      el.innerHTML = `
+      <div><strong>${p.name}</strong></div>
+      <div class="badge score">النتيجة: ${p.score}</div>
+      <div class="badge prob">الثقة: ${p.confidence}%</div>
+      <div class="badge">الفائز: ${p.winner}</div>
+      <div style="font-size:11px;color:#9ca3af;">${new Date(p.at).toLocaleString()}</div>
+      `;
+      list.appendChild(el);
+      });
+      }
+      
+      form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = document.getElementById("name").value.trim();
+      const winner = document.getElementById("winner").value;
+      const arsenalScore = document.getElementById("arsenal-score").value;
+      const bayernScore = document.getElementById("bayern-score").value;
+      const score = `${arsenalScore}-${bayernScore}`;
+      const confidence = Number(document.getElementById("confidence").value);
+      
+      const { predictions, sha } = await fetchPredictions();
+      predictions.unshift({ name, winner, score, confidence, at: new Date().toISOString() });
+      await savePredictions(predictions, sha);
+      render(predictions);
+      
+      form.reset();
+      document.getElementById("confidence").value = 60;
+      });
+      
+      exportBtn.addEventListener("click", async () => {
+      const { predictions } = await fetchPredictions();
+      if (predictions.length === 0) {
+      alert("لا توجد بيانات لتصديرها.");
+      return;
+      }
+      const rows = [["الاسم","النتيجة","الثقة","الفائز","التاريخ"]];
+      predictions.forEach(p => {
+      rows.push([p.name, p.score, String(p.confidence)+"%", p.winner, new Date(p.at).toLocaleString()]);
+      });
+      const csv = rows.map(r => r.map(cell => `"${String(cell).replace(/"/g,'""')}"`).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = "predictions.csv";
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      });
+      
+      // تحميل التوقعات عند فتح الصفحة
+      (async () => {
+      const { predictions } = await fetchPredictions();
+      render(predictions);
+      })();
+      </script>
+      </body>
+      </html>
+      
